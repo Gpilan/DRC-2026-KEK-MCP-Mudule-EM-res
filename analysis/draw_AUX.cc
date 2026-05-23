@@ -38,7 +38,8 @@ int main(int argc, char** argv) {
 
     // initialize the utility class
     TButility util = TButility();
-    util.LoadMapping("../../mapping/KEK_TB2026May_PMT.root");
+    util.LoadMapping("../mapping/KEK_TB2026May_PMT.root");
+    // util.LoadMapping("../mapping/KEK_TB2026May_MCP.root");
 
     // prepare CIDs that we want to use (CID = Channel ID)
     // Aux. detectors
@@ -66,7 +67,7 @@ int main(int argc, char** argv) {
     // 11, 13, 15: MCP C
     // 16: WC, NIM
     // (Hodoscope MID 17 dropped: hodoscope not available)
-    TBread<TBwaveform> readerWave = TBread<TBwaveform>(fRunNum, fMaxEvent, -1, false, "/Volumes/SSD_8TB", {16});
+    TBread<TBwaveform> readerWave = TBread<TBwaveform>(fRunNum, fMaxEvent, -1, false, "/pnfs/knu.ac.kr/data/cms/store/user/sungwon/2026_May_KEK_DRC_TB_Data", {16});
 
     // Set Maximum event
     if (fMaxEvent == -1 || fMaxEvent > readerWave.GetMaxEvent())
