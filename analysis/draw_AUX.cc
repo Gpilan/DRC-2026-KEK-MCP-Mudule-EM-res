@@ -32,14 +32,15 @@ int main(int argc, char** argv) {
 
     float thr = 0.3;
     float WC_calib_const = 0.05; // 0.05 mm/ns = 5 cm/microsecond
+    constexpr float cut_WC_timeDiff_max = 220.f; // reject NIM-WC >= 220 ns (edge artifacts)
 
     fs::path dir("./AUX_ref");
     if (!(fs::exists(dir))) fs::create_directory(dir);
 
     // initialize the utility class
     TButility util = TButility();
-    util.LoadMapping("../mapping/KEK_TB2026May_PMT.root");
-    // util.LoadMapping("../mapping/KEK_TB2026May_MCP.root");
+    util.LoadMapping("../mapping/KEK_TB2026May_MCP_V5_2026May24.root");
+    // util.LoadMapping("../mapping/KEK_TB2026May_PMT.root");
 
     // prepare CIDs that we want to use (CID = Channel ID)
     // Aux. detectors
@@ -59,6 +60,16 @@ int main(int argc, char** argv) {
     TH1F* hist_pos_WCY = new TH1F("WireChamberY", "WC Y position (no ref. correction);Y [mm];Evt", 800, -40, 40);
     TH2F* hist_WC      = new TH2F("WireChamber", "Wire Chamber (no ref. correction);X [mm];Y [mm];events", 160, -40, 40, 160, -40, 40);
     TH2F* hist_WC_fine = new TH2F("WireChamber_fine", "Wire Chamber with 0.1mm bin (no ref. correction);X [mm];Y [mm];events", 800, -40, 40, 800, -40, 40);
+
+    TH1F* hist_NIM_WCX_after = new TH1F("NIM_WCX_after", "NIM - WC X (NIM-WC < 220 ns);time (ns);Evt", 2000, -800, 800);
+    TH1F* hist_NIM_WCY_after = new TH1F("NIM_WCY_after", "NIM - WC Y (NIM-WC < 220 ns);time (ns);Evt", 2000, -800, 800);
+    TH1F* hist_NIM_after = new TH1F("NIM_timing_after", "NIM timing (NIM-WC < 220 ns);time (ns);Evt", 1000, 0, 800);
+    TH1F* hist_WCX_after = new TH1F("WCX_timing_after", "WC X timing (NIM-WC < 220 ns);time (ns);Evt", 1000, 0, 800);
+    TH1F* hist_WCY_after = new TH1F("WCY_timing_after", "WC Y timing (NIM-WC < 220 ns);time (ns);Evt", 1000, 0, 800);
+    TH1F* hist_pos_WCX_after = new TH1F("WireChamberX_after", "WC X position (no ref., NIM-WC < 220 ns);X [mm];Evt", 800, -40, 40);
+    TH1F* hist_pos_WCY_after = new TH1F("WireChamberY_after", "WC Y position (no ref., NIM-WC < 220 ns);Y [mm];Evt", 800, -40, 40);
+    TH2F* hist_WC_after = new TH2F("WireChamber_after", "Wire Chamber (no ref., NIM-WC < 220 ns);X [mm];Y [mm];events", 160, -40, 40, 160, -40, 40);
+    TH2F* hist_WC_fine_after = new TH2F("WireChamber_fine_after", "Wire Chamber 0.1mm bin (no ref., NIM-WC < 220 ns);X [mm];Y [mm];events", 800, -40, 40, 800, -40, 40);
 
     // MIDs
     // 1: PMT C
@@ -105,17 +116,40 @@ int main(int argc, char** argv) {
         hist_pos_WCY->Fill(pos_Y);
         hist_WC->Fill(pos_X, pos_Y);
         hist_WC_fine->Fill(pos_X, pos_Y);
+
+        const bool passTimingCut =
+            (timeDiff_X < cut_WC_timeDiff_max && timeDiff_Y < cut_WC_timeDiff_max);
+        if (!passTimingCut) continue;
+
+        hist_NIM_WCX_after->Fill(timeDiff_X);
+        hist_NIM_WCY_after->Fill(timeDiff_Y);
+        hist_NIM_after->Fill(timing_NIM);
+        hist_WCX_after->Fill(timing_WCX);
+        hist_WCY_after->Fill(timing_WCY);
+        hist_pos_WCX_after->Fill(pos_X);
+        hist_pos_WCY_after->Fill(pos_Y);
+        hist_WC_after->Fill(pos_X, pos_Y);
+        hist_WC_fine_after->Fill(pos_X, pos_Y);
     }
 
     float WC_X_mean = 0.;
     float WC_Y_mean = 0.;
-    float FWHM_X_ref = GetFWHM(hist_NIM_WCX, WC_X_mean); // Return FWHM of NIM - WC X, also calculates center position of X at FWHM
-    float FWHM_Y_ref = GetFWHM(hist_NIM_WCY, WC_Y_mean); // Return FWHM of NIM - WC Y, also calculates center position of Y at FWHM
+    float FWHM_X_ref = GetFWHM(hist_NIM_WCX, WC_X_mean);
+    float FWHM_Y_ref = GetFWHM(hist_NIM_WCY, WC_Y_mean);
 
-    std::cout << "WC X center timing at FWHM: " << WC_X_mean << std::endl;
-    std::cout << "WC Y center timing at FWHM: " << WC_Y_mean << std::endl;
-    std::cout << "WC X FWHM: " << FWHM_X_ref << std::endl;
-    std::cout << "WC Y FWHM: " << FWHM_Y_ref << std::endl;
+    float WC_X_mean_after = 0.;
+    float WC_Y_mean_after = 0.;
+    float FWHM_X_ref_after = GetFWHM(hist_NIM_WCX_after, WC_X_mean_after);
+    float FWHM_Y_ref_after = GetFWHM(hist_NIM_WCY_after, WC_Y_mean_after);
+
+    std::cout << "WC X center timing at FWHM (all): " << WC_X_mean << std::endl;
+    std::cout << "WC Y center timing at FWHM (all): " << WC_Y_mean << std::endl;
+    std::cout << "WC X FWHM (all): " << FWHM_X_ref << std::endl;
+    std::cout << "WC Y FWHM (all): " << FWHM_Y_ref << std::endl;
+    std::cout << "WC X center timing at FWHM (after timing cut): " << WC_X_mean_after << std::endl;
+    std::cout << "WC Y center timing at FWHM (after timing cut): " << WC_Y_mean_after << std::endl;
+    std::cout << "WC X FWHM (after timing cut): " << FWHM_X_ref_after << std::endl;
+    std::cout << "WC Y FWHM (after timing cut): " << FWHM_Y_ref_after << std::endl;
 
     std::string outName = "./AUX_ref/AUX_ref_Run_" + std::to_string(fRunNum) + ".root";
     TFile* outputRoot = new TFile(outName.c_str(), "RECREATE");
@@ -130,6 +164,16 @@ int main(int argc, char** argv) {
     hist_pos_WCY->Write();
     hist_WC->Write();
     hist_WC_fine->Write();
+
+    hist_NIM_WCX_after->Write();
+    hist_NIM_WCY_after->Write();
+    hist_NIM_after->Write();
+    hist_WCX_after->Write();
+    hist_WCY_after->Write();
+    hist_pos_WCX_after->Write();
+    hist_pos_WCY_after->Write();
+    hist_WC_after->Write();
+    hist_WC_fine_after->Write();
 
     outputRoot->Close();
 }

@@ -31,8 +31,8 @@ int main(int argc, char** argv) {
 
     // initialize the utility class
     TButility util = TButility();
-    util.LoadMapping("../mapping/KEK_TB2026May_PMT.root");
-    // util.LoadMapping("../mapping/KEK_TB2026May_MCP.root");
+    util.LoadMapping("../mapping/KEK_TB2026May_MCP_V5_2026May24.root");
+    // util.LoadMapping("../mapping/KEK_TB2026May_PMT.root");
 
     // prepare CIDs that we want to use (CID = Channel ID)
     // 3x3 tower CIDs

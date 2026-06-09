@@ -35,19 +35,19 @@ int main(int argc, char *argv[]) {
 
     // initialize the utility class
     TButility util = TButility();
-    util.LoadMapping("../mapping/KEK_TB2026May_PMT.root");
-    // util.LoadMapping("../mapping/KEK_TB2026May_MCP.root");
+    util.LoadMapping("../mapping/KEK_TB2026May_MCP_V5_2026May24.root");
+    // util.LoadMapping("../mapping/KEK_TB2026May_PMT.root");
 
 
-    int C_first = 140; // Module integration range
+    int C_first = 130; // Module integration range
     int C_last = 280;  // Module integration range
-    int S_first = 145; // Module integration range
-    int S_last = 340;  // Module integration range
+    int S_first = 135; // Module integration range
+    int S_last = 320;  // Module integration range
 
-    int C_first_T5 = 150.;   // integration range for T5
-    int C_last_T5 = 290.; // integration range for T5
-    int S_first_T5 = 160.;   // integration range for T5
-    int S_last_T5 = 360.; // integration range for T5
+    int C_first_T5 = 120.;   // integration range for T5
+    int C_last_T5 = 250.; // integration range for T5
+    int S_first_T5 = 135.;   // integration range for T5
+    int S_last_T5 = 310.; // integration range for T5
 
     float cut_WC_X_min = -5; // mm, trigger has size of 1x1 cm^2
     float cut_WC_X_max = 5;  // mm, trigger has size of 1x1 cm^2
@@ -56,39 +56,49 @@ int main(int argc, char *argv[]) {
 
     float leadingEdge_thr = 0.3;
     float WC_calib_const = 0.05; // 0.05 mm/ns = 5 cm/microsecond
+    constexpr float cut_WC_timeDiff_max = 220.f; // reject NIM-WC >= 220 ns (edge artifacts)
+
     TFile* AUX_rootfile = new TFile(("./AUX_ref/AUX_ref_Run_" + std::to_string(fRunNum) + ".root").c_str());
-    TH1F* hist_NIM_WCX = (TH1F*)AUX_rootfile->Get("NIM_WCX");
-    TH1F* hist_NIM_WCY = (TH1F*)AUX_rootfile->Get("NIM_WCY");
+    TH1F* hist_NIM_WCX_ref = (TH1F*)AUX_rootfile->Get("NIM_WCX_after");
+    TH1F* hist_NIM_WCY_ref = (TH1F*)AUX_rootfile->Get("NIM_WCY_after");
+    if (!hist_NIM_WCX_ref || !hist_NIM_WCY_ref) {
+        std::cerr << "[WARN] NIM_WCX_after / NIM_WCY_after not found; falling back to uncut histograms\n";
+        hist_NIM_WCX_ref = (TH1F*)AUX_rootfile->Get("NIM_WCX");
+        hist_NIM_WCY_ref = (TH1F*)AUX_rootfile->Get("NIM_WCY");
+    }
     float WC_X_ref = 0.;
     float WC_Y_ref = 0.;
-    GetFWHM(hist_NIM_WCX, WC_X_ref); // Return FWHM of NIM - WC X, also calculates center position of X at FWHM
-    GetFWHM(hist_NIM_WCY, WC_Y_ref); // Return FWHM of NIM - WC Y, also calculates center position of Y at FWHM
-    std::cout << "WC X center timing at FWHM: " << WC_X_ref << std::endl;
-    std::cout << "WC Y center timing at FWHM: " << WC_Y_ref << std::endl;
+    GetFWHM(hist_NIM_WCX_ref, WC_X_ref);
+    GetFWHM(hist_NIM_WCY_ref, WC_Y_ref);
+    std::cout << "WC X center timing at FWHM (timing-cut ref): " << WC_X_ref << std::endl;
+    std::cout << "WC Y center timing at FWHM (timing-cut ref): " << WC_Y_ref << std::endl;
 
     // Scaled factor for each channel
-    float scaleFactor_C = 0.9846;
-    float scaleFactor_S = 1.0025;
+    float scaleFactor_C = 0.9993;
+    float scaleFactor_S = 0.9941;
 
-    float calib_T1C = 0.000063674;
-    float calib_T2C = 0.000064320;
-    float calib_T3C = 0.000064528;
-    float calib_T4C = 0.000066421;
-    float calib_T5C = 0.000060354;
-    float calib_T6C = 0.000065821;
-    float calib_T7C = 0.000064138;
-    float calib_T8C = 0.000060189;
-    float calib_T9C = 0.000061569;
+    // Paste below lines into calib_DRC.cc
+    float calib_T1C = 0.000077443;
+    float calib_T2C = 0.000077659;
+    float calib_T3C = 0.000081678;
+    float calib_T4C = 0.000077895;
+    float calib_T5C = 0.000116228;
+    float calib_T6C = 0.000088878;
+    float calib_T7C = 0.000075465;
+    float calib_T8C = 0.000074791;
+    float calib_T9C = 0.000078140;
 
-    float calib_T1S = 0.000028695;
-    float calib_T2S = 0.000030289;
-    float calib_T3S = 0.000028662;
-    float calib_T4S = 0.000028088;
-    float calib_T5S = 0.000028435;
-    float calib_T6S = 0.000028842;
-    float calib_T7S = 0.000027692;
-    float calib_T8S = 0.000028358;
-    float calib_T9S = 0.000029474;
+    float calib_T1S = 0.000029511;
+    float calib_T2S = 0.000033804;
+    float calib_T3S = 0.000034158;
+    float calib_T4S = 0.000034279;
+    float calib_T5S = 0.000055065;
+    float calib_T6S = 0.000035161;
+    float calib_T7S = 0.000038510;
+    float calib_T8S = 0.000032708;
+    float calib_T9S = 0.000032666;
+
+
 
     // prepare C    // prepare CIDs that we want to use (CID = Channel ID)
     // 3x3 tower CIDs
@@ -325,6 +335,8 @@ int main(int argc, char *argv[]) {
         // Reference timing = NIM - WC timing
         float timeDiff_NIM_X = timing_NIM - timing_WCX;
         float timeDiff_NIM_Y = timing_NIM - timing_WCY;
+        if (timeDiff_NIM_X >= cut_WC_timeDiff_max || timeDiff_NIM_Y >= cut_WC_timeDiff_max) continue;
+
         // We do not know which timing corresponds to which side (L or R, U or D)
         float timeDiff_Ref_X = WC_X_ref - timeDiff_NIM_X; // diff > 0 -> right side, diff < 0 -> left side
         float timeDiff_Ref_Y = WC_Y_ref - timeDiff_NIM_Y; // diff > 0 -> down side, diff < 0 -> up side

@@ -1,0 +1,20 @@
+// Paste below lines into calib_DRC.cc
+float calib_T1C = 0.000077443;
+float calib_T2C = 0.000077659;
+float calib_T3C = 0.000081678;
+float calib_T4C = 0.000077895;
+float calib_T5C = 0.000116228;
+float calib_T6C = 0.000088878;
+float calib_T7C = 0.000075465;
+float calib_T8C = 0.000074791;
+float calib_T9C = 0.000078140;
+
+float calib_T1S = 0.000029511;
+float calib_T2S = 0.000033804;
+float calib_T3S = 0.000034158;
+float calib_T4S = 0.000034279;
+float calib_T5S = 0.000055065;
+float calib_T6S = 0.000035161;
+float calib_T7S = 0.000038510;
+float calib_T8S = 0.000032708;
+float calib_T9S = 0.000032666;
